@@ -268,7 +268,7 @@ export function ActivityScreen({ id, openBooking }: { id: string; openBooking?: 
               />
               <Fact
                 icon={MapPin}
-                k="Format"
+                k="Location"
                 v={online ? activity.delivery : activity.district ?? 'In person'}
               />
             </dl>
