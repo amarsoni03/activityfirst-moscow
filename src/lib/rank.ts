@@ -1,6 +1,6 @@
 import { GOAL_MAP } from './catalog';
 import { commuteScore } from './metro';
-import { fitsTonight, fitsWeekend } from './activity-rules';
+import { fitsTonight, fitsWeekdays, fitsWeekend } from './activity-rules';
 import { isOnline, upcomingWeek } from './format';
 import { sessionPrice } from './pricing';
 import type {
@@ -193,6 +193,9 @@ export function applyFilters(
       break;
     case 'tonight':
       out = out.filter(fitsTonight);
+      break;
+    case 'weekdays':
+      out = out.filter(fitsWeekdays);
       break;
     case 'weekend':
       out = out.filter(fitsWeekend);

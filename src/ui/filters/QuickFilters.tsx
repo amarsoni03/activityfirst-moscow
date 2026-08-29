@@ -1,5 +1,5 @@
 import { Footprints, Star, Zap } from 'lucide-react';
-import { todayName } from '../../lib/format';
+import { isWeekend, isWeekdays, todayName } from '../../lib/format';
 import { HUBS, STATIONS } from '../../lib/metro';
 import { useApp } from '../../state';
 import { TIMES } from '../../lib/types';
@@ -11,8 +11,8 @@ export function QuickFilters() {
   const f = state.filters;
   const tonightOn =
     f.days.length === 1 && f.days[0] === todayName() && f.timeOfDay.includes('Evening');
-  const weekendOn =
-    f.days.includes('Saturday') && f.days.includes('Sunday') && f.days.length === 2;
+  const weekdaysOn = isWeekdays(f.days);
+  const weekendOn = isWeekend(f.days);
   const selected = STATIONS.find((s) => s.id === f.metroStationIds[0]);
   const onlineOnly = isOnlineOnly(f);
 
@@ -69,6 +69,19 @@ export function QuickFilters() {
         }}
       >
         Tonight
+      </Chip>
+      <Chip
+        on={weekdaysOn}
+        onClick={() => {
+          if (weekdaysOn) {
+            setFilter('days', []);
+            setTab('all');
+          } else {
+            setTab('weekdays');
+          }
+        }}
+      >
+        Weekdays
       </Chip>
       <Chip
         on={weekendOn}

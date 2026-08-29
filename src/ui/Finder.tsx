@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Check, ChevronDown, MapPin, Search, X } from 'lucide-react';
 import { HERO_MOSCOW, POPULAR } from '../lib/catalog';
-import { todayName } from '../lib/format';
+import { isWeekend, isWeekdays, todayName } from '../lib/format';
 import { HUBS, LINES, STATIONS } from '../lib/metro';
 import { useLockBody, useMinWidth, useVisualViewport } from '../lib/media';
 import { DAYS, TIMES, type Audience } from '../lib/types';
@@ -117,13 +117,22 @@ export function Finder({
                 Tonight
               </Mini>
               <Mini
-                on={f.days.includes('Saturday') && f.days.includes('Sunday') && f.days.length === 2}
+                on={isWeekdays(f.days)}
                 onClick={() => {
-                  const on =
-                    f.days.includes('Saturday') &&
-                    f.days.includes('Sunday') &&
-                    f.days.length === 2;
-                  if (on) {
+                  if (isWeekdays(f.days)) {
+                    setFilter('days', []);
+                    setTab('all');
+                  } else {
+                    setTab('weekdays');
+                  }
+                }}
+              >
+                Weekdays
+              </Mini>
+              <Mini
+                on={isWeekend(f.days)}
+                onClick={() => {
+                  if (isWeekend(f.days)) {
                     setFilter('days', []);
                     setTab('all');
                   } else {

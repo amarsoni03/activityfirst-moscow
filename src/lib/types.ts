@@ -46,6 +46,7 @@ export type DiscoveryTab =
   | 'all'
   | 'fits-free-time'
   | 'tonight'
+  | 'weekdays'
   | 'weekend'
   | 'near-metro';
 export type ViewMode = 'list' | 'map' | 'schedule';
@@ -234,6 +235,8 @@ export const DAYS: DayOfWeek[] = [
   'Saturday',
   'Sunday',
 ];
+
+export const WEEKDAYS: DayOfWeek[] = DAYS.slice(0, 5);
 
 export const TIMES: TimeOfDay[] = ['Morning', 'Afternoon', 'Evening'];
 

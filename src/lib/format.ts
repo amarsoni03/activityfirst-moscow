@@ -7,7 +7,7 @@ import type {
   TimeOfDay,
   UserPreferences,
 } from './types';
-import { DAYS, TIMES } from './types';
+import { DAYS, TIMES, WEEKDAYS } from './types';
 
 export function money(amount: number): string {
   return `${new Intl.NumberFormat('ru-RU').format(amount)} ₽`;
@@ -57,8 +57,6 @@ function slotOn(prefs: UserPreferences, day: DayOfWeek, time: TimeOfDay): boolea
 
 /** One line for the hours you marked — not a 21-cell dump. */
 export function hoursPhrase(prefs: UserPreferences): string {
-  const weekdays = DAYS.slice(0, 5);
-  const weekend = DAYS.slice(5);
   const bits: string[] = [];
 
   const pack = (days: DayOfWeek[], label: string) => {
@@ -71,8 +69,8 @@ export function hoursPhrase(prefs: UserPreferences): string {
     }
   };
 
-  pack(weekdays, 'Weekday');
-  pack(weekend, 'Weekend');
+  pack(WEEKDAYS, 'Weekday');
+  pack(DAYS.slice(5), 'Weekend');
   return bits.length ? bits.join(' · ') : 'No hours marked';
 }
 
@@ -138,6 +136,14 @@ export function prettyDate(iso: string): string {
 export function todayName(): DayOfWeek {
   const js = new Date().getDay();
   return DAYS[(js + 6) % 7] ?? 'Monday';
+}
+
+export function isWeekdays(days: DayOfWeek[]): boolean {
+  return days.length === WEEKDAYS.length && WEEKDAYS.every((d) => days.includes(d));
+}
+
+export function isWeekend(days: DayOfWeek[]): boolean {
+  return days.length === 2 && days.includes('Saturday') && days.includes('Sunday');
 }
 
 function overlapSlots(activity: Activity, prefs?: UserPreferences) {

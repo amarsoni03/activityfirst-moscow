@@ -17,6 +17,7 @@ const TABS: { id: DiscoveryTab; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'fits-free-time', label: 'Fits my time' },
   { id: 'tonight', label: 'Tonight' },
+  { id: 'weekdays', label: 'Weekdays' },
   { id: 'weekend', label: 'Weekend' },
   { id: 'near-metro', label: 'Near metro' },
 ];
@@ -58,6 +59,7 @@ export function Explore() {
     const station = STATIONS.find((s) => s.id === state.filters.metroStationIds[0]);
     if (station) return `Near ${station.name}`;
     if (state.tab === 'tonight') return 'Tonight in Moscow';
+    if (state.tab === 'weekdays') return 'On weekdays';
     if (state.tab === 'weekend') return 'This weekend';
     return 'In the city this week';
   })();

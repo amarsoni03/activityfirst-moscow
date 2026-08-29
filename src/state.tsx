@@ -24,16 +24,17 @@ import {
   type AppState,
 } from './lib/store';
 import { parseHash, parsePath, toPath, type Route } from './lib/routes';
-import type {
-  Activity,
-  Booking,
-  DiscoveryTab,
-  FilterState,
-  GuestDetails,
-  RankedActivity,
-  SortOption,
-  UserPreferences,
-  ViewMode,
+import {
+  WEEKDAYS,
+  type Activity,
+  type Booking,
+  type DiscoveryTab,
+  type FilterState,
+  type GuestDetails,
+  type RankedActivity,
+  type SortOption,
+  type UserPreferences,
+  type ViewMode,
 } from './lib/types';
 import { todayName } from './lib/format';
 
@@ -139,6 +140,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       let { filters } = s;
       if (tab === 'tonight') {
         filters = { ...filters, days: [todayName()], timeOfDay: ['Evening'] };
+      } else if (tab === 'weekdays') {
+        filters = { ...filters, days: [...WEEKDAYS], timeOfDay: [] };
       } else if (tab === 'weekend') {
         filters = { ...filters, days: ['Saturday', 'Sunday'], timeOfDay: [] };
       }

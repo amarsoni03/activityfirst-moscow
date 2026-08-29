@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Check, ChevronDown, MapPin, Search } from 'lucide-react';
 import { CATEGORIES } from '../../lib/catalog';
-import { money, todayName } from '../../lib/format';
+import { isWeekend, isWeekdays, money, todayName } from '../../lib/format';
 import { HUBS, LINES, STATIONS } from '../../lib/metro';
 import { useApp } from '../../state';
 import type { Audience, Delivery, FilterState } from '../../lib/types';
@@ -68,8 +68,8 @@ export function whenSummary(f: FilterState) {
   const tonight =
     f.days.length === 1 && f.days[0] === todayName() && f.timeOfDay.includes('Evening');
   if (tonight) return 'Tonight';
-  const weekend = f.days.includes('Saturday') && f.days.includes('Sunday') && f.days.length === 2;
-  if (weekend && f.timeOfDay.length === 0) return 'Weekend';
+  if (isWeekdays(f.days) && f.timeOfDay.length === 0) return 'Weekdays';
+  if (isWeekend(f.days) && f.timeOfDay.length === 0) return 'Weekend';
   const parts: string[] = [];
   if (f.days.length) parts.push(f.days.map((d) => d.slice(0, 3)).join(', '));
   if (f.timeOfDay.length) parts.push(f.timeOfDay.join(', '));
@@ -254,12 +254,12 @@ export function WhenControls() {
   const f = state.filters;
   const tonightOn =
     f.days.length === 1 && f.days[0] === todayName() && f.timeOfDay.includes('Evening');
-  const weekendOn =
-    f.days.includes('Saturday') && f.days.includes('Sunday') && f.days.length === 2;
+  const weekdaysOn = isWeekdays(f.days);
+  const weekendOn = isWeekend(f.days);
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-3 gap-1.5">
         <Chip
           on={tonightOn}
           block
@@ -274,6 +274,20 @@ export function WhenControls() {
           }}
         >
           Tonight
+        </Chip>
+        <Chip
+          on={weekdaysOn}
+          block
+          onClick={() => {
+            if (weekdaysOn) {
+              setFilter('days', []);
+              setTab('all');
+            } else {
+              setTab('weekdays');
+            }
+          }}
+        >
+          Weekdays
         </Chip>
         <Chip
           on={weekendOn}
