@@ -1,24 +1,39 @@
+import { useState } from 'react';
+import { preconnect, preload } from 'react-dom';
 import { ExternalLink } from 'lucide-react';
-import { yandexMapsHref, yandexWidgetSrc } from '../lib/yandex-map';
+import { yandexMapsHref, yandexStaticSrc } from '../lib/yandex-map';
 import type { Activity } from '../lib/types';
 
 export function YandexPlaceMap({ activity }: { activity: Activity }) {
+  const [ok, setOk] = useState(true);
   const title = activity.venue ?? activity.address ?? activity.metroStationName ?? 'Moscow';
-  const src = yandexWidgetSrc(activity);
+  const src = yandexStaticSrc(activity);
   const href = yandexMapsHref(activity);
+
+  preconnect('https://static-maps.yandex.ru');
+  preload(src, { as: 'image' });
 
   return (
     <div>
-      <div className="relative aspect-[16/10] bg-warm sm:aspect-[2/1]">
-        <iframe
-          title={`Map of ${title}`}
-          src={src}
-          className="absolute inset-0 h-full w-full border-0"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          allowFullScreen
-        />
-      </div>
+      {ok ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="relative block aspect-[16/10] bg-warm sm:aspect-[2/1]"
+          aria-label={`Open map of ${title} in Yandex Maps`}
+        >
+          <img
+            src={src}
+            alt=""
+            width={650}
+            height={406}
+            className="h-full w-full object-cover"
+            decoding="async"
+            onError={() => setOk(false)}
+          />
+        </a>
+      ) : null}
       <div className="border-t border-hair px-5 py-3 sm:px-6">
         <a
           href={href}

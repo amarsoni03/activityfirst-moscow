@@ -12,22 +12,22 @@ export function placeSearchText(activity: Activity): string {
   return 'Moscow';
 }
 
-export function yandexWidgetSrc(activity: Activity): string {
-  const geo = stationGeo(activity.metroStationId) ?? MOSCOW_CENTER;
+export function placeGeo(activity: Activity): { lat: number; lon: number } {
+  return stationGeo(activity.metroStationId) ?? MOSCOW_CENTER;
+}
+
+/** One PNG — no Maps JS. Size is capped by the Static API. */
+export function yandexStaticSrc(activity: Activity): string {
+  const geo = placeGeo(activity);
   const params = new URLSearchParams({
-    lang: 'en_RU',
-    scroll: 'false',
-    l: 'map',
-    z: '16',
     ll: `${geo.lon},${geo.lat}`,
+    size: '650,406',
+    z: '15',
+    l: 'map',
+    pt: `${geo.lon},${geo.lat},pm2rdm`,
+    lang: 'en_US',
   });
-  if (activity.address || activity.venue) {
-    params.set('mode', 'search');
-    params.set('text', placeSearchText(activity));
-  } else {
-    params.set('pt', `${geo.lon},${geo.lat},pm2rdm`);
-  }
-  return `https://yandex.ru/map-widget/v1/?${params.toString()}`;
+  return `https://static-maps.yandex.ru/1.x/?${params.toString()}`;
 }
 
 export function yandexMapsHref(activity: Activity): string {
