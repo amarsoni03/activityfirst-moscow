@@ -110,6 +110,7 @@ export function BookingPanel({
   return (
     <form
       className={box}
+      autoComplete="off"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
@@ -240,7 +241,7 @@ export function BookingPanel({
           label="Name"
           value={form.name}
           error={errors.name}
-          autoComplete="name"
+          autoComplete="off"
           onChange={(v) => set('name', v)}
         />
         <Field
@@ -248,7 +249,7 @@ export function BookingPanel({
           value={form.email}
           error={errors.email}
           type="email"
-          autoComplete="email"
+          autoComplete="off"
           onChange={(v) => set('email', v)}
         />
         <Field
@@ -256,7 +257,7 @@ export function BookingPanel({
           value={form.phone}
           error={errors.phone}
           type="tel"
-          autoComplete="tel"
+          autoComplete="off"
           onChange={(v) => set('phone', v)}
         />
         <label className="block text-sm">

@@ -264,8 +264,8 @@ export const TEMPLATES: Template[] = [
 ];
 
 export const DEMO_USER = {
-  name: 'Amar Sharma',
-  email: 'amar.sharma@example.com',
+  name: 'Anastasia Lebedeva',
+  email: 'anastasia.lebedeva@example.com',
   phone: '+7 999 123-45-67',
 };
 
