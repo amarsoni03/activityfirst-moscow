@@ -6,7 +6,7 @@ import { useApp, useActiveBookings } from '../state';
 import { money } from '../lib/format';
 import { localConcierge } from '../lib/rank';
 import type { Activity } from '../lib/types';
-import { SavedActivityRow } from './Card';
+import { BookingRow, SavedActivityRow } from './Card';
 
 export function Sheet({
   open,
@@ -112,7 +112,7 @@ export function SavedSheet({ open, onClose }: { open: boolean; onClose: () => vo
 }
 
 export function BookingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { cancel, go } = useApp();
+  const { cancel, go, find } = useApp();
   const bookings = useActiveBookings();
   return (
     <Sheet open={open} onClose={onClose} title="Bookings">
@@ -121,27 +121,16 @@ export function BookingsSheet({ open, onClose }: { open: boolean; onClose: () =>
       ) : (
         <ul className="space-y-3">
           {bookings.map((b) => (
-            <li key={b.id} className="rounded-xl border border-hair px-3 py-3">
-              <p className="font-medium">{b.activityTitle}</p>
-              <p className="mt-0.5 text-xs capitalize text-quiet">
-                {b.status} · {b.sessionDate}
-                {b.name ? ` · ${b.name}` : ''}
-              </p>
-              <div className="mt-2 flex gap-3 text-sm">
-                <button
-                  type="button"
-                  className="underline"
-                  onClick={() => {
-                    onClose();
-                    go({ view: 'activity', id: b.activityId });
-                  }}
-                >
-                  Open
-                </button>
-                <button type="button" className="text-quiet" onClick={() => cancel(b.id)}>
-                  Cancel
-                </button>
-              </div>
+            <li key={b.id}>
+              <BookingRow
+                booking={b}
+                activity={find(b.activityId)}
+                onOpen={() => {
+                  onClose();
+                  go({ view: 'activity', id: b.activityId });
+                }}
+                onCancel={() => cancel(b.id)}
+              />
             </li>
           ))}
         </ul>

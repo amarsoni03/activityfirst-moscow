@@ -16,15 +16,17 @@ import {
   kit,
   lengthLabel,
   money,
+  placeDetail,
   prettyDateLong,
   scheduleLine,
+  sessionWhen,
   upcomingSessions,
   walkLabel,
 } from '../lib/format';
 import { listingPhotos } from '../lib/catalog';
 import { DEMO_USER, type Booking, type GuestDetails } from '../lib/types';
 import { useApp, useBookingFor, useWaitlistFor } from '../state';
-import { MetroDot, PhotoStage, WeekStrip } from '../ui/bits';
+import { Cover, MetroDot, PhotoStage, WeekStrip } from '../ui/bits';
 import { ActivityCard } from '../ui/Card';
 import { Sheet } from '../ui/Sheets';
 import { BookingPanel } from './activity/BookingPanel';
@@ -381,26 +383,49 @@ export function ActivityScreen({ id }: { id: string }) {
       {!drawer && (
         <div className="fixed inset-x-0 bottom-0 z-[35] border-t border-hair bg-paper/95 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => save(activity.id)}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-hair"
-              aria-pressed={saved}
-              aria-label="Save"
-            >
-              <Heart className={saved ? 'h-4 w-4 fill-ink' : 'h-4 w-4'} />
-            </button>
-            <div className="min-w-0">
-              <p className="truncate text-base font-semibold">{money(activity.price)}</p>
-              <p className="truncate text-xs text-quiet">{activity.priceUnit}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setDrawer(true)}
-              className="min-h-12 flex-1 rounded-xl bg-signal text-sm font-semibold text-signal-ink"
-            >
-              {booking ? 'Your booking' : full ? 'Join waitlist' : ctaLabel(activity)}
-            </button>
+            {booking ? (
+              <>
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-warm">
+                  <Cover src={activity.coverImage} alt="" className="h-full w-full object-cover" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">
+                    {sessionWhen(activity, booking.sessionDate)}
+                  </p>
+                  <p className="truncate text-xs text-quiet">{placeDetail(activity)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDrawer(true)}
+                  className="min-h-12 shrink-0 rounded-xl bg-signal px-4 text-sm font-semibold text-signal-ink"
+                >
+                  Your booking
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => save(activity.id)}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-hair"
+                  aria-pressed={saved}
+                  aria-label="Save"
+                >
+                  <Heart className={saved ? 'h-4 w-4 fill-ink' : 'h-4 w-4'} />
+                </button>
+                <div className="min-w-0">
+                  <p className="truncate text-base font-semibold">{money(activity.price)}</p>
+                  <p className="truncate text-xs text-quiet">{activity.priceUnit}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDrawer(true)}
+                  className="min-h-12 flex-1 rounded-xl bg-signal text-sm font-semibold text-signal-ink"
+                >
+                  {full ? 'Join waitlist' : ctaLabel(activity)}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

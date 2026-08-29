@@ -1,6 +1,6 @@
 import type { DashTab } from '../lib/routes';
 import { useApp, useActiveBookings } from '../state';
-import { ActivityCard } from '../ui/Card';
+import { ActivityCard, BookingRow } from '../ui/Card';
 import { DEMO_USER } from '../lib/types';
 import { money } from '../lib/format';
 
@@ -39,25 +39,38 @@ export function Dashboard({ tab }: { tab?: DashTab }) {
       </div>
 
       {current === 'overview' && (
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          <Stat n={bookings.length} l="Active bookings" />
-          <Stat n={state.savedIds.length} l="Saved" />
-          <Stat n={state.conversations.length} l="Conversations" />
-        </div>
+        <>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <Stat n={bookings.length} l="Active bookings" />
+            <Stat n={state.savedIds.length} l="Saved" />
+            <Stat n={state.conversations.length} l="Conversations" />
+          </div>
+          {bookings.length > 0 ? (
+            <ul className="mt-6 space-y-3">
+              {bookings.map((b) => (
+                <li key={b.id}>
+                  <BookingRow
+                    booking={b}
+                    activity={find(b.activityId)}
+                    onOpen={() => go({ view: 'activity', id: b.activityId })}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </>
       )}
 
       {current === 'upcoming' && (
         <ul className="mt-8 space-y-3">
           {bookings.length === 0 && <p className="text-sm text-quiet">No upcoming reservations.</p>}
           {bookings.map((b) => (
-            <li key={b.id} className="rounded-2xl border border-hair bg-paper p-4">
-              <button type="button" onClick={() => go({ view: 'activity', id: b.activityId })}>
-                <p className="font-medium">{b.activityTitle}</p>
-                <p className="text-sm text-quiet">
-                  {b.status} · {b.sessionDate}
-                  {b.name ? ` · ${b.name}` : ''}
-                </p>
-              </button>
+            <li key={b.id}>
+              <BookingRow
+                booking={b}
+                activity={find(b.activityId)}
+                onOpen={() => go({ view: 'activity', id: b.activityId })}
+              />
             </li>
           ))}
         </ul>

@@ -1,6 +1,15 @@
 import { Heart } from 'lucide-react';
-import type { Activity } from '../lib/types';
-import { isOnline, lengthLabel, money, walkLabel, whyLine } from '../lib/format';
+import type { Activity, Booking } from '../lib/types';
+import {
+  bookingStatusLabel,
+  isOnline,
+  lengthLabel,
+  money,
+  placeDetail,
+  sessionWhen,
+  walkLabel,
+  whyLine,
+} from '../lib/format';
 import { isSessionUnit, sessionPrice } from '../lib/pricing';
 import { useApp } from '../state';
 import { Cover, MetroDot } from './bits';
@@ -222,6 +231,77 @@ export function SavedActivityRow({
       >
         <Heart className={`h-3.5 w-3.5 ${saved ? 'fill-ink' : ''}`} />
       </button>
+    </article>
+  );
+}
+
+export function BookingRow({
+  activity,
+  booking,
+  onOpen,
+  onCancel,
+}: {
+  activity?: Activity;
+  booking: Booking;
+  onOpen: () => void;
+  onCancel?: () => void;
+}) {
+  const online = activity ? isOnline(activity.delivery) : false;
+  const walk = activity ? walkLabel(activity) : undefined;
+  const when = activity
+    ? sessionWhen(activity, booking.sessionDate)
+    : booking.sessionDate;
+  const where = activity ? placeDetail(activity) : undefined;
+
+  return (
+    <article className="overflow-hidden rounded-2xl bg-paper ring-1 ring-hair transition hover:bg-canvas hover:ring-ink/10">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-w-0 w-full text-left"
+        aria-label={booking.activityTitle}
+      >
+        <div className="relative min-h-[6.75rem] w-[6.25rem] shrink-0 self-stretch bg-warm sm:w-[7rem]">
+          <Cover
+            src={activity?.coverImage ?? ''}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </div>
+        <div className="min-w-0 flex-1 px-3 py-2.5">
+          <p className="text-[12px] leading-none text-quiet">
+            {bookingStatusLabel(booking.status)}
+            {booking.enrollmentType === 'trial' ? ' · Trial' : ''}
+          </p>
+          <h3 className="mt-1.5 line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-ink">
+            {booking.activityTitle}
+          </h3>
+          {when ? (
+            <p className="mt-1.5 text-[12px] font-medium text-ink/80">{when}</p>
+          ) : null}
+          {activity && !online ? (
+            <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-ink/75">
+              <MetroDot color={activity.metroLineColor ?? '#888'} size={8} />
+              <span className="truncate">
+                {[activity.venue, activity.metroStationName].filter(Boolean).join(' · ')}
+                {walk ? ` · ${walk}` : ''}
+              </span>
+            </p>
+          ) : where ? (
+            <p className="mt-1 truncate text-[12px] text-ink/75">{where}</p>
+          ) : null}
+        </div>
+      </button>
+      {onCancel ? (
+        <div className="flex gap-4 border-t border-hair px-3 py-2 text-sm">
+          <button type="button" className="underline" onClick={onOpen}>
+            Open
+          </button>
+          <button type="button" className="text-quiet" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      ) : null}
     </article>
   );
 }

@@ -1,12 +1,17 @@
 import { Heart } from 'lucide-react';
 import {
+  bookingStatusLabel,
   ctaLabel,
+  isOnline,
   money,
-  prettyDateLong,
+  placeDetail,
+  sessionWhen,
+  walkLabel,
 } from '../../lib/format';
 import { downloadSessionIcs } from '../../lib/calendar';
 import type { Activity, Booking } from '../../lib/types';
 import { useApp } from '../../state';
+import { Cover, MetroDot } from '../../ui/bits';
 import type { BookingForm } from './form';
 
 export function BookingPanel({
@@ -63,35 +68,62 @@ export function BookingPanel({
     activity.capacity && activity.capacity > 0 ? Math.min(100, (taken / activity.capacity) * 100) : 0;
 
   if (booking) {
+    const online = isOnline(activity.delivery);
+    const walk = walkLabel(activity);
     return (
-      <div className={plain ? '' : 'rounded-3xl border border-hair bg-paper p-6 shadow-[0_18px_50px_rgba(0,0,0,0.08)]'}>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-quiet">
-          {booking.status === 'confirmed' ? 'Reserved' : booking.status === 'quote' ? 'Quote requested' : 'Request sent'}
-        </p>
-        <p className="mt-2 font-display text-2xl font-bold leading-tight">{activity.title}</p>
-        <dl className="mt-5 space-y-2 text-sm">
-          <Row k="When" v={`${prettyDateLong(booking.sessionDate ?? activity.startDate)} · ${activity.startTime}`} />
-          <Row k="For" v={`${booking.name}${booking.partySize && booking.partySize > 1 ? ` · ${booking.partySize}` : ''}`} />
-          <Row k="Type" v={booking.enrollmentType} />
-          <Row k="Price" v={`${money(activity.price)} ${activity.priceUnit}`} />
-        </dl>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="mt-6 min-h-11 w-full rounded-xl border border-hair text-sm"
-        >
-          Cancel booking
-        </button>
-        {booking.status === 'confirmed' && booking.sessionDate ? (
+      <div className={plain ? '' : 'overflow-hidden rounded-3xl border border-hair bg-paper shadow-[0_18px_50px_rgba(0,0,0,0.08)]'}>
+        <div className={plain ? 'overflow-hidden rounded-2xl bg-warm' : 'bg-warm'}>
+          <Cover
+            src={activity.coverImage}
+            alt=""
+            className="aspect-[16/10] h-auto w-full object-cover"
+          />
+        </div>
+        <div className={plain ? 'pt-5' : 'p-6'}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-quiet">
+            {bookingStatusLabel(booking.status)}
+          </p>
+          <p className="mt-2 font-display text-2xl font-bold leading-tight">{activity.title}</p>
+          <dl className="mt-5 space-y-2 text-sm">
+            <Row k="When" v={sessionWhen(activity, booking.sessionDate)} />
+            <div className="flex justify-between gap-3">
+              <dt className="text-quiet">Where</dt>
+              <dd className="max-w-[70%] text-right font-medium">
+                {online ? (
+                  placeDetail(activity)
+                ) : (
+                  <span className="inline-flex items-start justify-end gap-1.5">
+                    <MetroDot color={activity.metroLineColor ?? '#888'} size={8} />
+                    <span>
+                      {placeDetail(activity)}
+                      {walk ? <span className="mt-0.5 block text-xs font-normal text-quiet">{activity.metroStationName} · {walk}</span> : null}
+                    </span>
+                  </span>
+                )}
+              </dd>
+            </div>
+            <Row k="For" v={`${booking.name}${booking.partySize && booking.partySize > 1 ? ` · ${booking.partySize}` : ''}`} />
+            <Row k="Type" v={booking.enrollmentType} />
+            <Row k="Price" v={`${money(activity.price)} ${activity.priceUnit}`} />
+          </dl>
           <button
             type="button"
-            onClick={() => downloadSessionIcs(activity, booking.sessionDate!)}
-            className="mt-3 min-h-11 w-full rounded-xl bg-ink text-sm font-semibold text-paper"
+            onClick={onCancel}
+            className="mt-6 min-h-11 w-full rounded-xl border border-hair text-sm"
           >
-            Add to calendar
+            Cancel booking
           </button>
-        ) : null}
-        <p className="mt-4 text-xs leading-relaxed text-quiet">{activity.cancellationPolicy}</p>
+          {booking.status === 'confirmed' && booking.sessionDate ? (
+            <button
+              type="button"
+              onClick={() => downloadSessionIcs(activity, booking.sessionDate!)}
+              className="mt-3 min-h-11 w-full rounded-xl bg-ink text-sm font-semibold text-paper"
+            >
+              Add to calendar
+            </button>
+          ) : null}
+          <p className="mt-4 text-xs leading-relaxed text-quiet">{activity.cancellationPolicy}</p>
+        </div>
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import type { Activity, DayOfWeek, Delivery, FilterState, UserPreferences } from './types';
+import type { Activity, BookingStatus, DayOfWeek, Delivery, FilterState, UserPreferences } from './types';
 import { DAYS } from './types';
 
 export function money(amount: number): string {
@@ -27,6 +27,37 @@ export function ctaLabel(activity: Activity): string {
 export function placeLabel(activity: Activity): string {
   if (isOnline(activity.delivery)) return activity.meetingPlatform ?? activity.delivery;
   return activity.metroStationName ?? 'Near metro';
+}
+
+/** Venue and street, or the live platform — what you actually go to. */
+export function placeDetail(activity: Activity): string {
+  if (isOnline(activity.delivery)) {
+    return activity.meetingPlatform
+      ? `${activity.meetingPlatform} · Moscow time`
+      : activity.delivery;
+  }
+  if (activity.venue && activity.address) return `${activity.venue}, ${activity.address}`;
+  if (activity.venue && activity.metroStationName) {
+    return `${activity.venue} · ${activity.metroStationName}`;
+  }
+  return activity.venue ?? activity.metroStationName ?? activity.address ?? 'Moscow';
+}
+
+export function sessionWhen(activity: Activity, sessionDate?: string): string {
+  const iso = sessionDate ?? activity.startDate;
+  const date = prettyDateLong(iso);
+  const time =
+    activity.startTime && activity.endTime
+      ? `${activity.startTime}–${activity.endTime}`
+      : activity.schedule.timeRange;
+  return `${date} · ${time}`;
+}
+
+export function bookingStatusLabel(status: BookingStatus): string {
+  if (status === 'confirmed') return 'Reserved';
+  if (status === 'quote') return 'Quote requested';
+  if (status === 'pending') return 'Request sent';
+  return 'Cancelled';
 }
 
 export function walkLabel(activity: Activity): string | undefined {
@@ -126,7 +157,8 @@ export function upcomingSessions(activity: Activity, count = 5): string[] {
 }
 
 export function prettyDateLong(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', {
+  const value = iso.includes('T') ? iso : `${iso}T12:00:00`;
+  return new Date(value).toLocaleDateString('en-GB', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
