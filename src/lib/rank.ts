@@ -1,16 +1,19 @@
 import { GOAL_MAP } from './catalog';
 import { commuteScore } from './metro';
 import { fitsTonight, fitsWeekend } from './activity-rules';
-import { isOnline } from './format';
+import { isOnline, upcomingWeek } from './format';
 import { sessionPrice } from './pricing';
 import type {
   Activity,
+  Booking,
+  DayOfWeek,
   Delivery,
   DiscoveryTab,
   FilterState,
   FreeTimeSlot,
   RankedActivity,
   SortOption,
+  TimeOfDay,
   UserPreferences,
 } from './types';
 import { DAYS, TIMES } from './types';
@@ -310,6 +313,109 @@ export function weekMatches(activities: Activity[], prefs: UserPreferences): Act
     }
     return true;
   });
+}
+
+export type WeekPickKind = 'booked' | 'saved' | 'suggested';
+
+export interface WeekPick {
+  timeOfDay: TimeOfDay;
+  kind: WeekPickKind;
+  activity: Activity;
+  booking?: Booking;
+}
+
+export interface WeekDayPlan {
+  dateIso: string;
+  day: DayOfWeek;
+  today: boolean;
+  items: WeekPick[];
+}
+
+function bookingOnDay(booking: Booking, iso: string): boolean {
+  const date = booking.sessionDate?.slice(0, 10);
+  return date === iso;
+}
+
+function pickScore(
+  activity: Activity,
+  prefs: UserPreferences,
+  saved: boolean,
+  lastCategory: string,
+): number {
+  const commute = commuteScore(
+    prefs.preferredMetroStationId,
+    activity.metroStationId,
+    activity.walkMinutes,
+  );
+  let s = commute + activity.rating * 6;
+  if (saved) s += 50;
+  if (activity.featured) s += 4;
+  if (lastCategory && activity.category === lastCategory) s -= 18;
+  return s;
+}
+
+/** One thing per day for the next seven days — bookings first, then a single pick. */
+export function pickWeekPlan(
+  activities: Activity[],
+  prefs: UserPreferences,
+  bookings: Booking[],
+  savedIds: string[],
+): WeekDayPlan[] {
+  const matches = weekMatches(activities, prefs);
+  const active = bookings.filter((b) => b.status !== 'cancelled');
+  const used = new Set<string>();
+  const days: WeekDayPlan[] = [];
+  let lastCategory = '';
+
+  for (const d of upcomingWeek()) {
+    const dayBookings = active.filter((b) => bookingOnDay(b, d.iso));
+    const items: WeekPick[] = [];
+
+    if (dayBookings.length) {
+      for (const booking of dayBookings) {
+        const activity = activities.find((a) => a.id === booking.activityId);
+        if (!activity) continue;
+        used.add(activity.id);
+        const timeOfDay = activity.schedule.timeOfDay[0] ?? 'Evening';
+        items.push({ timeOfDay, kind: 'booked', activity, booking });
+        lastCategory = activity.category;
+      }
+      if (items.length) days.push({ dateIso: d.iso, day: d.day, today: d.today, items });
+      continue;
+    }
+
+    const free = prefs.freeTimeSlots.filter((s) => s.day === d.day && s.enabled);
+    if (!free.length) continue;
+
+    const candidates = matches.filter(
+      (a) =>
+        !used.has(a.id) &&
+        a.schedule.days.includes(d.day) &&
+        free.some((s) => a.schedule.timeOfDay.includes(s.timeOfDay)),
+    );
+    if (!candidates.length) continue;
+
+    const ranked = candidates
+      .map((a) => ({
+        a,
+        slot: free.find((s) => a.schedule.timeOfDay.includes(s.timeOfDay)) ?? free[0]!,
+        score: pickScore(a, prefs, savedIds.includes(a.id), lastCategory),
+      }))
+      .sort((x, y) => y.score - x.score);
+    const chosen = ranked[0];
+    if (!chosen) continue;
+
+    used.add(chosen.a.id);
+    lastCategory = chosen.a.category;
+    items.push({
+      timeOfDay: chosen.slot.timeOfDay,
+      kind: savedIds.includes(chosen.a.id) ? 'saved' : 'suggested',
+      activity: chosen.a,
+    });
+    days.push({ dateIso: d.iso, day: d.day, today: d.today, items });
+  }
+
+  return days;
 }
 
 export function localConcierge(query: string, activities: Activity[]): Activity[] {

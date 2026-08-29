@@ -1,5 +1,13 @@
-import type { Activity, BookingStatus, DayOfWeek, Delivery, FilterState, UserPreferences } from './types';
-import { DAYS } from './types';
+import type {
+  Activity,
+  BookingStatus,
+  DayOfWeek,
+  Delivery,
+  FilterState,
+  TimeOfDay,
+  UserPreferences,
+} from './types';
+import { DAYS, TIMES } from './types';
 
 export function money(amount: number): string {
   return `${new Intl.NumberFormat('ru-RU').format(amount)} ₽`;
@@ -14,6 +22,58 @@ export function localIso(date = new Date()): string {
 
 export function todayIso(): string {
   return localIso();
+}
+
+export function upcomingWeek(count = 7): { day: DayOfWeek; iso: string; today: boolean }[] {
+  const start = new Date();
+  start.setHours(12, 0, 0, 0);
+  const out: { day: DayOfWeek; iso: string; today: boolean }[] = [];
+  for (let i = 0; i < count; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const day = DAYS[(d.getDay() + 6) % 7];
+    if (!day) continue;
+    out.push({ day, iso: localIso(d), today: i === 0 });
+  }
+  return out;
+}
+
+export function dayHeading(iso: string): string {
+  if (iso === todayIso()) return 'Today';
+  const tmr = new Date();
+  tmr.setHours(12, 0, 0, 0);
+  tmr.setDate(tmr.getDate() + 1);
+  if (iso === localIso(tmr)) return 'Tomorrow';
+  return new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+function slotOn(prefs: UserPreferences, day: DayOfWeek, time: TimeOfDay): boolean {
+  return prefs.freeTimeSlots.some((s) => s.day === day && s.timeOfDay === time && s.enabled);
+}
+
+/** One line for the hours you marked — not a 21-cell dump. */
+export function hoursPhrase(prefs: UserPreferences): string {
+  const weekdays = DAYS.slice(0, 5);
+  const weekend = DAYS.slice(5);
+  const bits: string[] = [];
+
+  const pack = (days: DayOfWeek[], label: string) => {
+    for (const t of TIMES) {
+      const hit = days.filter((d) => slotOn(prefs, d, t));
+      if (!hit.length) continue;
+      const window = `${t.toLowerCase()}s`;
+      if (hit.length === days.length) bits.push(`${label} ${window}`);
+      else bits.push(`${hit.map((d) => d.slice(0, 3)).join(' ')} ${window}`);
+    }
+  };
+
+  pack(weekdays, 'Weekday');
+  pack(weekend, 'Weekend');
+  return bits.length ? bits.join(' · ') : 'No hours marked';
 }
 
 export function isOnline(mode: Delivery): boolean {
