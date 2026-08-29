@@ -14,7 +14,7 @@ const TABS: { id: DashTab; label: string }[] = [
 ];
 
 export function Dashboard({ tab }: { tab?: DashTab }) {
-  const { state, go, find } = useApp();
+  const { state, go, find, cancel } = useApp();
   const current = tab ?? 'overview';
   const bookings = useActiveBookings();
   const saved = state.savedIds.map(find).filter(Boolean);
@@ -53,6 +53,7 @@ export function Dashboard({ tab }: { tab?: DashTab }) {
                     booking={b}
                     activity={find(b.activityId)}
                     onOpen={() => go({ view: 'activity', id: b.activityId })}
+                    onCancel={() => cancel(b.id)}
                   />
                 </li>
               ))}
@@ -70,6 +71,7 @@ export function Dashboard({ tab }: { tab?: DashTab }) {
                 booking={b}
                 activity={find(b.activityId)}
                 onOpen={() => go({ view: 'activity', id: b.activityId })}
+                onCancel={() => cancel(b.id)}
               />
             </li>
           ))}

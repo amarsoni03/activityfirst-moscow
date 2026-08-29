@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import type { Activity, Booking } from '../lib/types';
 import {
@@ -246,20 +247,22 @@ export function BookingRow({
   onOpen: () => void;
   onCancel?: () => void;
 }) {
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const online = activity ? isOnline(activity.delivery) : false;
   const walk = activity ? walkLabel(activity) : undefined;
   const when = activity
     ? sessionWhen(activity, booking.sessionDate)
     : booking.sessionDate;
   const where = activity ? placeDetail(activity) : undefined;
+  const label = [booking.activityTitle, when, where].filter(Boolean).join('. ');
 
   return (
-    <article className="overflow-hidden rounded-2xl bg-paper ring-1 ring-hair transition hover:bg-canvas hover:ring-ink/10">
+    <article className="overflow-hidden rounded-2xl bg-paper ring-1 ring-hair">
       <button
         type="button"
         onClick={onOpen}
-        className="flex min-w-0 w-full text-left"
-        aria-label={booking.activityTitle}
+        className="flex w-full min-w-0 text-left transition hover:bg-canvas"
+        aria-label={label}
       >
         <div className="relative min-h-[6.75rem] w-[6.25rem] shrink-0 self-stretch bg-warm sm:w-[7rem]">
           <Cover
@@ -268,7 +271,7 @@ export function BookingRow({
             className="absolute inset-0 h-full w-full object-cover"
           />
         </div>
-        <div className="min-w-0 flex-1 px-3 py-2.5">
+        <div className="min-w-0 flex-1 px-3 py-2.5 pr-3">
           <p className="text-[12px] leading-none text-quiet">
             {bookingStatusLabel(booking.status)}
             {booking.enrollmentType === 'trial' ? ' · Trial' : ''}
@@ -292,16 +295,48 @@ export function BookingRow({
           ) : null}
         </div>
       </button>
-      {onCancel ? (
-        <div className="flex gap-4 border-t border-hair px-3 py-2 text-sm">
-          <button type="button" className="underline" onClick={onOpen}>
-            Open
-          </button>
-          <button type="button" className="text-quiet" onClick={onCancel}>
-            Cancel
-          </button>
-        </div>
-      ) : null}
+      <div className="border-t border-hair p-2.5">
+        {confirmCancel && onCancel ? (
+          <div>
+            <p className="px-0.5 pb-2 text-xs text-quiet">Cancel this reservation?</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmCancel(false)}
+                className="min-h-11 rounded-xl bg-ink text-sm font-semibold text-paper"
+              >
+                Keep
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="min-h-11 rounded-xl border border-hair text-sm font-medium"
+              >
+                Yes, cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className={`grid gap-2 ${onCancel ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <button
+              type="button"
+              onClick={onOpen}
+              className="min-h-11 rounded-xl bg-ink text-sm font-semibold text-paper"
+            >
+              Open
+            </button>
+            {onCancel ? (
+              <button
+                type="button"
+                onClick={() => setConfirmCancel(true)}
+                className="min-h-11 rounded-xl border border-hair text-sm font-medium"
+              >
+                Cancel
+              </button>
+            ) : null}
+          </div>
+        )}
+      </div>
     </article>
   );
 }
