@@ -31,6 +31,7 @@ import {
   type DiscoveryTab,
   type FilterState,
   type GuestDetails,
+  type NearbyFallback,
   type RankedActivity,
   type SortOption,
   type UserPreferences,
@@ -43,6 +44,7 @@ interface Ctx {
   route: Route;
   go: (route: Route) => void;
   results: RankedActivity[];
+  nearbyFallback: NearbyFallback | null;
   setFilter: <K extends keyof FilterState>(key: K, value: FilterState[K]) => void;
   setFilters: (filters: FilterState) => void;
   clearFilters: () => void;
@@ -121,7 +123,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setRoute(r);
   }, []);
 
-  const results = useMemo(() => visibleActivities(state), [state]);
+  const { results, nearbyFallback } = useMemo(() => visibleActivities(state), [state]);
 
   const setFilter = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setState((s) => ({ ...s, filters: { ...s.filters, [key]: value }, limit: 12 }));
@@ -218,6 +220,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       route,
       go,
       results,
+      nearbyFallback,
       setFilter,
       setFilters,
       clearFilters,
@@ -242,6 +245,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       route,
       go,
       results,
+      nearbyFallback,
       setFilter,
       setFilters,
       clearFilters,

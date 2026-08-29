@@ -10,9 +10,11 @@ import { Cover, MetroDot } from './bits';
 
 export function Finder({
   matchCount,
+  nearby,
   onSearch,
 }: {
   matchCount: number;
+  nearby?: boolean;
   onSearch: () => void;
 }) {
   const { state, setFilter, setTab } = useApp();
@@ -192,14 +194,18 @@ export function Finder({
             <span className="truncate">
               {online
                 ? `Show ${matchCount.toLocaleString('en-GB')} live activities`
-                : selected
-                  ? `Show ${matchCount.toLocaleString('en-GB')} · ${selected.name}`
-                  : `Show ${matchCount.toLocaleString('en-GB')} activities`}
+                : selected && nearby
+                  ? `Show ${matchCount.toLocaleString('en-GB')} nearby · ${selected.name}`
+                  : selected
+                    ? `Show ${matchCount.toLocaleString('en-GB')} · ${selected.name}`
+                    : `Show ${matchCount.toLocaleString('en-GB')} activities`}
             </span>
             <ArrowRight className="h-4 w-4 shrink-0" />
           </button>
           <p className="mt-3 text-xs text-quiet">
-            {matchCount.toLocaleString('en-GB')} match this search
+            {nearby
+              ? `${matchCount.toLocaleString('en-GB')} nearby — nothing at this station`
+              : `${matchCount.toLocaleString('en-GB')} match this search`}
           </p>
         </div>
       </div>

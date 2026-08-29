@@ -1,5 +1,5 @@
 import { GOAL_MAP } from './catalog';
-import { commuteScore } from './metro';
+import { commuteScore, estimateStops, NEARBY_STOPS, SHORT_RIDE_SCORE, stationById } from './metro';
 import { fitsTonight, fitsWeekdays, fitsWeekend } from './activity-rules';
 import { isOnline, upcomingWeek } from './format';
 import { sessionPrice } from './pricing';
@@ -11,6 +11,7 @@ import type {
   DiscoveryTab,
   FilterState,
   FreeTimeSlot,
+  NearbyFallback,
   RankedActivity,
   SortOption,
   TimeOfDay,
@@ -73,6 +74,14 @@ function relevance(activity: Activity, query: string): number {
   return score;
 }
 
+function commuteLine(activity: Activity, preferredId?: string): string {
+  if (isOnline(activity.delivery)) return activity.meetingPlatform ?? 'Online';
+  const score = commuteScore(preferredId, activity.metroStationId, activity.walkMinutes);
+  if (score >= 78) return 'Very close';
+  if (score >= SHORT_RIDE_SCORE) return 'A short ride';
+  return 'Further';
+}
+
 export function enrich(
   activities: Activity[],
   prefs?: UserPreferences,
@@ -81,21 +90,15 @@ export function enrich(
   return activities.map((a) => ({
     ...a,
     scheduleMatchPercentage: scheduleMatch(a, prefs),
-    commuteInfo: isOnline(a.delivery)
-      ? (a.meetingPlatform ?? 'Online')
-      : commuteScore(prefs?.preferredMetroStationId, a.metroStationId, a.walkMinutes) >= 78
-        ? 'Very close'
-        : commuteScore(prefs?.preferredMetroStationId, a.metroStationId, a.walkMinutes) >= 48
-          ? 'A short ride'
-          : 'Further',
+    commuteInfo: commuteLine(a, prefs?.preferredMetroStationId),
     searchRelevance: keyword ? relevance(a, keyword) : 0,
   }));
 }
 
-function recScore(a: RankedActivity, maxRel: number): number {
+function recScore(a: RankedActivity, maxRel: number, preferredStationId?: string): number {
   let s = 0;
   s += maxRel > 0 ? (a.searchRelevance / maxRel) * W.search : W.search * 0.5;
-  s += (commuteScore(undefined, a.metroStationId, a.walkMinutes) / 100) * W.metro;
+  s += (commuteScore(preferredStationId, a.metroStationId, a.walkMinutes) / 100) * W.metro;
   s += (a.scheduleMatchPercentage / 100) * W.schedule;
   const soon = daysUntil(a.startDate);
   s += ((soon <= 7 ? 100 : soon <= 14 ? 70 : soon <= 30 ? 40 : 12) / 100) * W.soon;
@@ -210,6 +213,52 @@ export function applyFilters(
   return out;
 }
 
+/** When the selected station is empty, keep listings a short ride away (or the closest few). */
+export function expandToNearbyStations(
+  exact: RankedActivity[],
+  citywide: RankedActivity[],
+  originIds: string[],
+): { list: RankedActivity[]; nearby: NearbyFallback | null } {
+  if (!originIds.length || exact.length) return { list: exact, nearby: null };
+
+  const originId = originIds[0]!;
+  const scored = citywide
+    .filter(
+      (a) => a.metroStationId && !originIds.includes(a.metroStationId) && !isOnline(a.delivery),
+    )
+    .map((a) => ({
+      a,
+      ride: commuteScore(originId, a.metroStationId, 0),
+      score: commuteScore(originId, a.metroStationId, a.walkMinutes),
+      stops: estimateStops(originId, a.metroStationId!),
+    }))
+    .filter((x) => x.ride > 0)
+    .sort((x, y) => y.ride - x.ride || y.score - x.score || x.stops - y.stops);
+
+  const short = scored.filter((x) => x.stops <= NEARBY_STOPS);
+  const chosen = short.length ? short : scored.slice(0, 12);
+  if (!chosen.length) return { list: exact, nearby: null };
+
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const x of chosen) {
+    const name = x.a.metroStationName;
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    names.push(name);
+  }
+
+  return {
+    list: chosen.map((x) => ({ ...x.a, nearbyStops: x.stops })),
+    nearby: {
+      originId,
+      originName: stationById(originId)?.name ?? originId,
+      stationNames: names,
+      shortRide: short.length > 0,
+    },
+  };
+}
+
 export function sortList(
   list: RankedActivity[],
   sort: SortOption,
@@ -245,7 +294,9 @@ export function sortList(
       break;
     default: {
       const maxRel = Math.max(...next.map((a) => a.searchRelevance), 1);
-      next.sort((a, b) => recScore(b, maxRel) - recScore(a, maxRel));
+      next.sort(
+        (a, b) => recScore(b, maxRel, preferredStationId) - recScore(a, maxRel, preferredStationId),
+      );
     }
   }
   return next;
@@ -310,7 +361,7 @@ export function weekMatches(activities: Activity[], prefs: UserPreferences): Act
     if (
       !isOnline(a.delivery) &&
       prefs.preferredMetroStationId &&
-      commuteScore(prefs.preferredMetroStationId, a.metroStationId, a.walkMinutes) < 48
+      commuteScore(prefs.preferredMetroStationId, a.metroStationId, a.walkMinutes) < SHORT_RIDE_SCORE
     ) {
       return false;
     }

@@ -47,6 +47,45 @@ export const STATIONS: MetroStation[] = [
   { id: 'savyolov', name: 'Savyolovskaya', nameRu: 'Савёловская', lineId: 'bkl', lineName: 'Bolshaya Koltsevaya', lineColor: T, district: 'Butyrsky', street: 'Sushchyovsky Val, 5', venues: ['Flacon, Bolshaya Novodmitrovskaya 36', 'Savyolovsky studio', 'Sushchyovsky Val 5'], x: 48, y: 24 },
 ];
 
+/** WGS84. Yandex widget `ll` / `pt` take longitude, latitude. */
+export const STATION_GEO: Record<string, { lat: number; lon: number }> = {
+  okhotny: { lat: 55.7576, lon: 37.6165 },
+  'park-kultury': { lat: 55.7352, lon: 37.5929 },
+  chistye: { lat: 55.7647, lon: 37.6388 },
+  sokolniki: { lat: 55.7892, lon: 37.6797 },
+  vorobyovy: { lat: 55.7100, lon: 37.5594 },
+  mayakov: { lat: 55.7698, lon: 37.5956 },
+  tverskaya: { lat: 55.7647, lon: 37.6060 },
+  teatral: { lat: 55.7577, lon: 37.6190 },
+  novokuz: { lat: 55.7415, lon: 37.6294 },
+  pavelets: { lat: 55.7306, lon: 37.6377 },
+  arbatskaya: { lat: 55.7522, lon: 37.6035 },
+  revolyutsii: { lat: 55.7565, lon: 37.6216 },
+  smolensk: { lat: 55.7488, lon: 37.5836 },
+  kievskaya: { lat: 55.7434, lon: 37.5655 },
+  komsomol: { lat: 55.7749, lon: 37.6547 },
+  mira: { lat: 55.7797, lon: 37.6333 },
+  belorus: { lat: 55.7764, lon: 37.5833 },
+  krasno: { lat: 55.7614, lon: 37.5774 },
+  dobrynin: { lat: 55.7291, lon: 37.6229 },
+  taganskaya: { lat: 55.7416, lon: 37.6517 },
+  kurskaya: { lat: 55.7586, lon: 37.6590 },
+  pushkin: { lat: 55.7650, lon: 37.6054 },
+  barrikad: { lat: 55.7614, lon: 37.5811 },
+  kuznetsky: { lat: 55.7608, lon: 37.6256 },
+  tushino: { lat: 55.8264, lon: 37.4367 },
+  city: { lat: 55.7489, lon: 37.5343 },
+  cska: { lat: 55.7866, lon: 37.5332 },
+  savyolov: { lat: 55.7931, lon: 37.5884 },
+};
+
+export const MOSCOW_CENTER = { lat: 55.7558, lon: 37.6176 };
+
+export function stationGeo(id: string | undefined): { lat: number; lon: number } | undefined {
+  if (!id) return undefined;
+  return STATION_GEO[id];
+}
+
 export const HUBS = [
   'tverskaya',
   'arbatskaya',
@@ -73,6 +112,12 @@ export function estimateStops(fromId: string, toId: string): number {
   if (a.lineId === b.lineId) return Math.max(1, Math.round(dist / 8));
   return Math.max(3, Math.round(dist / 5));
 }
+
+/** Matches enrich()'s "A short ride" cut — about four stops, or ~16 minutes. */
+export const SHORT_RIDE_SCORE = 48;
+
+/** Stations this close count as nearby when the selected stop has no listings. */
+export const NEARBY_STOPS = 3;
 
 export function commuteScore(
   preferredId: string | undefined,

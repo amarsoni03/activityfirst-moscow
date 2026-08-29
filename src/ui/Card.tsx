@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
-import type { Activity, Booking } from '../lib/types';
+import type { Activity, Booking, RankedActivity } from '../lib/types';
 import {
   bookingStatusLabel,
   isOnline,
@@ -8,6 +8,7 @@ import {
   money,
   placeDetail,
   sessionWhen,
+  stopsLabel,
   walkLabel,
   whyLine,
 } from '../lib/format';
@@ -30,6 +31,7 @@ export function ActivityCardView({
 }) {
   const online = isOnline(activity.delivery);
   const walk = walkLabel(activity);
+  const stops = stopsLabel((activity as RankedActivity).nearbyStops);
   const full = activity.availableSeats === 0;
   const tight =
     activity.availableSeats !== undefined &&
@@ -93,6 +95,7 @@ export function ActivityCardView({
               <>
                 <MetroDot color={activity.metroLineColor ?? '#888'} size={9} />
                 <span className="truncate font-medium text-ink">{activity.metroStationName}</span>
+                {stops ? <span className="shrink-0">· {stops}</span> : null}
                 {walk ? <span className="shrink-0">· {walk}</span> : null}
               </>
             )}

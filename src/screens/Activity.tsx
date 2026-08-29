@@ -29,6 +29,7 @@ import { useApp, useBookingFor, useWaitlistFor } from '../state';
 import { Cover, MetroDot, PhotoStage, WeekStrip } from '../ui/bits';
 import { ActivityCard } from '../ui/Card';
 import { Sheet } from '../ui/Sheets';
+import { YandexPlaceMap } from '../ui/YandexPlaceMap';
 import { BookingPanel } from './activity/BookingPanel';
 import { ListingMosaic, PhotoLightbox } from './activity/Gallery';
 import { Checklist, Chip, Fact } from './activity/ListingBits';
@@ -318,24 +319,27 @@ export function ActivityScreen({ id, openBooking }: { id: string; openBooking?: 
                     style={{ backgroundColor: activity.metroLineColor ?? '#111' }}
                     aria-hidden
                   />
-                  <div className="p-5 sm:p-6">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-quiet">
-                      Location
-                    </p>
-                    <p className="mt-2 flex items-start gap-2 text-sm">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                      <span>
-                        <span className="block text-lg font-semibold tracking-tight">
-                          {activity.venue}
+                  <div className="min-w-0 flex-1">
+                    <div className="p-5 sm:p-6">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-quiet">
+                        Location
+                      </p>
+                      <p className="mt-2 flex items-start gap-2 text-sm">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          <span className="block text-lg font-semibold tracking-tight">
+                            {activity.venue}
+                          </span>
+                          <span className="mt-0.5 block text-quiet">{activity.address}</span>
+                          <span className="mt-3 inline-flex items-center gap-2">
+                            <MetroDot color={activity.metroLineColor ?? '#888'} />
+                            {activity.metroStationName} · {activity.metroLineName}
+                            {walk ? ` · ${walk}` : ''}
+                          </span>
                         </span>
-                        <span className="mt-0.5 block text-quiet">{activity.address}</span>
-                        <span className="mt-3 inline-flex items-center gap-2">
-                          <MetroDot color={activity.metroLineColor ?? '#888'} />
-                          {activity.metroStationName} · {activity.metroLineName}
-                          {walk ? ` · ${walk}` : ''}
-                        </span>
-                      </span>
-                    </p>
+                      </p>
+                    </div>
+                    <YandexPlaceMap activity={activity} />
                   </div>
                 </div>
               </div>

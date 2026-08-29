@@ -1,5 +1,5 @@
 import { assertCatalog, buildCatalog, coverForCategory } from './catalog';
-import { defaultPrefs, applyFilters, diversify, enrich, sortList } from './rank';
+import { defaultPrefs, applyFilters, diversify, enrich, expandToNearbyStations, sortList } from './rank';
 import {
   CATALOG_VERSION,
   DEMO_USER,
@@ -10,6 +10,7 @@ import {
   type GuestDetails,
   type DiscoveryTab,
   type FilterState,
+  type NearbyFallback,
   type RankedActivity,
   type SortOption,
   type Toast,
@@ -117,10 +118,33 @@ export function initialState(): AppState {
   };
 }
 
-export function visibleActivities(state: AppState): RankedActivity[] {
-  const enriched = enrich(state.activities, state.preferences, state.filters.keyword);
-  const filtered = applyFilters(enriched, state.filters, state.tab, state.preferences);
-  return diversify(sortList(filtered, state.sort, state.preferences.preferredMetroStationId));
+export function visibleActivities(state: AppState): {
+  results: RankedActivity[];
+  nearbyFallback: NearbyFallback | null;
+} {
+  const originId = state.filters.metroStationIds[0];
+  const rankPrefs = originId
+    ? { ...state.preferences, preferredMetroStationId: originId }
+    : state.preferences;
+  const enriched = enrich(state.activities, rankPrefs, state.filters.keyword);
+  const exact = applyFilters(enriched, state.filters, state.tab, state.preferences);
+  const citywide =
+    originId && !exact.length
+      ? applyFilters(
+          enriched,
+          { ...state.filters, metroStationIds: [], metroLineId: undefined },
+          state.tab,
+          state.preferences,
+        )
+      : exact;
+  const { list, nearby } = expandToNearbyStations(exact, citywide, state.filters.metroStationIds);
+  const preferred = originId ?? state.preferences.preferredMetroStationId;
+  const sort = nearby && state.sort === 'recommended' ? 'nearest-metro' : state.sort;
+  const ordered = sortList(list, sort, preferred);
+  return {
+    results: nearby ? ordered : diversify(ordered),
+    nearbyFallback: nearby,
+  };
 }
 
 export function persistUserData(

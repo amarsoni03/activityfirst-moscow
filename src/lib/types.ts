@@ -133,6 +133,15 @@ export interface RankedActivity extends Activity {
   scheduleMatchPercentage: number;
   commuteInfo: string;
   searchRelevance: number;
+  /** Set when this row is a nearby-station fallback, not at the selected stop. */
+  nearbyStops?: number;
+}
+
+export interface NearbyFallback {
+  originId: string;
+  originName: string;
+  stationNames: string[];
+  shortRide: boolean;
 }
 
 export interface FilterState {

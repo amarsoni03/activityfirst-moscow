@@ -126,6 +126,11 @@ export function walkLabel(activity: Activity): string | undefined {
   return 'At the station';
 }
 
+export function stopsLabel(stops?: number): string | undefined {
+  if (stops == null || stops <= 0) return undefined;
+  return stops === 1 ? '1 stop' : `${stops} stops`;
+}
+
 export function prettyDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {
     day: 'numeric',

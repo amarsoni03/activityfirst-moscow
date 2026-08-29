@@ -36,6 +36,7 @@ export function Explore() {
   const {
     state,
     results,
+    nearbyFallback,
     setFilter,
     clearFilters,
     setTab,
@@ -57,6 +58,11 @@ export function Explore() {
 
   const peekTitle = (() => {
     const station = STATIONS.find((s) => s.id === state.filters.metroStationIds[0]);
+    if (nearbyFallback && station) {
+      return nearbyFallback.shortRide
+        ? `A few stops from ${station.name}`
+        : `Closest to ${station.name}`;
+    }
     if (station) return `Near ${station.name}`;
     if (state.tab === 'tonight') return 'Tonight in Moscow';
     if (state.tab === 'weekdays') return 'On weekdays';
@@ -64,12 +70,13 @@ export function Explore() {
     return 'In the city this week';
   })();
 
-  const jump = () => ref.current?.scrollIntoView({ behavior: 'smooth' });
+  const jump = () => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
     <div>
       <Finder
         matchCount={results.length}
+        nearby={Boolean(nearbyFallback)}
         onSearch={jump}
       />
       <div className="mx-auto max-w-6xl px-4 pb-6 sm:px-6">
@@ -78,6 +85,11 @@ export function Explore() {
             <h2 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
               {peekTitle}
             </h2>
+            {nearbyFallback ? (
+              <p className="mt-1 text-sm text-quiet">
+                Nothing at {nearbyFallback.originName}. Showing nearby stations.
+              </p>
+            ) : null}
             <div className="mt-4 grid gap-4 sm:grid-cols-3 sm:gap-5">
               {results.slice(0, 3).map((a) => (
                 <ActivityCard key={a.id} activity={a} />
@@ -92,7 +104,7 @@ export function Explore() {
           }}
         />
 
-      <div ref={ref} id="results" className="mt-10 scroll-mt-24 sm:mt-14">
+      <div className="mt-10 sm:mt-14">
         <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
           <div className="-mx-4 flex gap-1 overflow-x-auto px-4 no-scrollbar md:mx-0 md:px-0" role="tablist" aria-label="Discovery">
             {TABS.map((tab) => (
@@ -189,13 +201,30 @@ export function Explore() {
           </div>
         )}
 
-        <div className="mt-6 flex items-end justify-between gap-4">
-          <p className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-            {results.length.toLocaleString('en-GB')}
-            <span className="ml-2 text-lg font-medium text-quiet sm:text-xl">
-              {results.length === 1 ? 'activity' : 'activities'}
-            </span>
-          </p>
+        <div ref={ref} id="results" className="mt-6 scroll-mt-4">
+          <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+              {results.length.toLocaleString('en-GB')}
+              <span className="ml-2 text-lg font-medium text-quiet sm:text-xl">
+                {results.length === 1 ? 'activity' : 'activities'}
+              </span>
+            </p>
+            {nearbyFallback ? (
+              <p className="mt-1.5 max-w-xl text-sm text-quiet">
+                Nothing at {nearbyFallback.originName}
+                {state.filters.days.length || state.filters.timeOfDay.length
+                  ? ' in this window'
+                  : ''}
+                .{' '}
+                {nearbyFallback.shortRide ? 'These are a short ride away' : 'Closest listings'}
+                {nearbyFallback.stationNames.length
+                  ? ` — ${stationList(nearbyFallback.stationNames)}`
+                  : ''}
+                .
+              </p>
+            ) : null}
+          </div>
         </div>
 
         <div className="mt-5 grid gap-8 lg:mt-6 lg:grid-cols-[minmax(20rem,22rem)_1fr]">
@@ -248,6 +277,7 @@ export function Explore() {
             )}
           </div>
         </div>
+        </div>
       </div>
       </div>
 
@@ -296,6 +326,13 @@ export function Explore() {
       />
     </div>
   );
+}
+
+function stationList(names: string[]): string {
+  const shown = names.slice(0, 3);
+  const extra = names.length - shown.length;
+  const main = shown.join(', ');
+  return extra > 0 ? `${main} and ${extra} more` : main;
 }
 
 function Empty({
