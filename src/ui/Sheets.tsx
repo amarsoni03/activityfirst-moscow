@@ -6,6 +6,7 @@ import { useApp, useActiveBookings } from '../state';
 import { money } from '../lib/format';
 import { localConcierge } from '../lib/rank';
 import type { Activity } from '../lib/types';
+import { SavedActivityRow } from './Card';
 
 export function Sheet({
   open,
@@ -95,17 +96,13 @@ export function SavedSheet({ open, onClose }: { open: boolean; onClose: () => vo
         <ul className="space-y-3">
           {items.map((a) => (
             <li key={a.id}>
-              <button
-                type="button"
-                className="w-full rounded-xl border border-hair px-3 py-3 text-left hover:bg-canvas"
-                onClick={() => {
+              <SavedActivityRow
+                activity={a}
+                onOpen={() => {
                   onClose();
                   go({ view: 'activity', id: a.id });
                 }}
-              >
-                <p className="font-medium">{a.title}</p>
-                <p className="text-xs text-quiet">{a.metroStationName ?? a.delivery}</p>
-              </button>
+              />
             </li>
           ))}
         </ul>

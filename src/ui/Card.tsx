@@ -151,3 +151,77 @@ export function ActivityCard({
     />
   );
 }
+
+export function SavedActivityRow({
+  activity,
+  onOpen,
+}: {
+  activity: Activity;
+  onOpen: () => void;
+}) {
+  const { state, save } = useApp();
+  const online = isOnline(activity.delivery);
+  const walk = walkLabel(activity);
+  const session = sessionPrice(activity);
+  const saved = state.savedIds.includes(activity.id);
+  const audience = activity.audience === 'Children' ? 'Kids' : activity.audience;
+
+  return (
+    <article className="relative flex overflow-hidden rounded-2xl bg-paper ring-1 ring-hair transition hover:bg-canvas hover:ring-ink/10">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-w-0 flex-1 text-left"
+        aria-label={activity.title}
+      >
+        <div className="relative min-h-[6.75rem] w-[6.25rem] shrink-0 self-stretch bg-warm sm:w-[7rem]">
+          <Cover src={activity.coverImage} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        </div>
+        <div className="min-w-0 flex-1 px-3 py-2.5 pr-10">
+          <p className="text-[12px] leading-none text-quiet">
+            {activity.category}
+            <span className="mx-1 text-hair">·</span>
+            {audience}
+          </p>
+          <h3 className="mt-1.5 line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-ink">
+            {activity.title}
+          </h3>
+          <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-ink/70">{activity.shortDescription}</p>
+          <p className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[12px] text-ink/75">
+            {online ? (
+              <span className="truncate">{activity.meetingPlatform} · Moscow time</span>
+            ) : (
+              <>
+                <MetroDot color={activity.metroLineColor ?? '#888'} size={8} />
+                <span className="truncate font-medium text-ink">{activity.metroStationName}</span>
+                {walk ? <span className="shrink-0">· {walk}</span> : null}
+              </>
+            )}
+          </p>
+          <p className="mt-1.5 flex items-baseline justify-between gap-2 text-[12px]">
+            <span className="min-w-0 truncate text-quiet">
+              {lengthLabel(activity)}
+              <span className="mx-1 text-hair">·</span>
+              {activity.schedule.timeRange}
+            </span>
+            <span className="shrink-0 font-semibold text-ink">
+              {session === null ? money(activity.price) : money(session)}
+            </span>
+          </p>
+        </div>
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          save(activity.id);
+        }}
+        className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-paper text-ink shadow-sm transition hover:bg-warm"
+        aria-label={saved ? 'Remove from saved' : 'Save'}
+        aria-pressed={saved}
+      >
+        <Heart className={`h-3.5 w-3.5 ${saved ? 'fill-ink' : ''}`} />
+      </button>
+    </article>
+  );
+}

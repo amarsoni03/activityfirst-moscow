@@ -65,7 +65,11 @@ export function Dashboard({ tab }: { tab?: DashTab }) {
 
       {current === 'saved' && (
         <div className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-4">
-          {saved.map((a) => a && <ActivityCard key={a.id} activity={a} />)}
+          {saved.length === 0 ? (
+            <p className="text-sm text-quiet">Save activities while you browse. They live here.</p>
+          ) : (
+            saved.map((a) => a && <ActivityCard key={a.id} activity={a} />)
+          )}
         </div>
       )}
 
