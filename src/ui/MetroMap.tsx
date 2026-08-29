@@ -4,9 +4,11 @@ import { MetroDot } from './bits';
 
 export function MetroMap({
   activities,
+  selectedIds = [],
   onStation,
 }: {
   activities: Activity[];
+  selectedIds?: string[];
   onStation: (id: string) => void;
 }) {
   const counts = new Map<string, number>();
@@ -20,7 +22,7 @@ export function MetroMap({
       <div className="flex items-start justify-between gap-3 px-4 py-4 sm:items-center sm:px-5">
         <div className="min-w-0">
           <p className="font-display text-lg sm:text-xl">The city as stations</p>
-          <p className="text-sm text-quiet">Tap a node to see what meets nearby.</p>
+          <p className="text-sm text-quiet">Tap a station to filter nearby.</p>
         </div>
         <div className="-mr-4 flex max-w-[50%] gap-2 overflow-x-auto no-scrollbar sm:mr-0 sm:max-w-none sm:flex">
           {LINES.map((l) => (
@@ -52,9 +54,17 @@ export function MetroMap({
           })}
           {STATIONS.map((s) => {
             const n = counts.get(s.id) ?? 0;
+            const on = selectedIds.includes(s.id);
             return (
               <g key={s.id} className="cursor-pointer" onClick={() => onStation(s.id)}>
-                <circle cx={s.x} cy={s.y * 0.8} r={n > 0 ? 2.1 : 1.35} fill="#fffdf8" stroke={s.lineColor} strokeWidth="0.7" />
+                <circle
+                  cx={s.x}
+                  cy={s.y * 0.8}
+                  r={on ? 2.8 : n > 0 ? 2.1 : 1.35}
+                  fill={on ? s.lineColor : '#fffdf8'}
+                  stroke={s.lineColor}
+                  strokeWidth={on ? 1.1 : 0.7}
+                />
                 {n > 0 && (
                   <text
                     x={s.x}
@@ -81,7 +91,9 @@ export function MetroMap({
               <button
                 type="button"
                 onClick={() => onStation(s.id)}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-canvas"
+                className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-canvas ${
+                  selectedIds.includes(s.id) ? 'bg-warm' : ''
+                }`}
               >
                 <MetroDot color={s.lineColor} />
                 {s.name}

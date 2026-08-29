@@ -211,9 +211,17 @@ export function Explore() {
             ) : state.viewMode === 'map' ? (
               <MetroMap
                 activities={results}
+                selectedIds={state.filters.metroStationIds}
                 onStation={(id) => {
+                  const station = STATIONS.find((s) => s.id === id);
+                  const on = state.filters.metroStationIds[0] === id;
+                  if (on) {
+                    setFilter('metroStationIds', []);
+                    setFilter('metroLineId', undefined);
+                    return;
+                  }
                   setFilter('metroStationIds', [id]);
-                  setView('list');
+                  if (station) setFilter('metroLineId', station.lineId);
                 }}
               />
             ) : state.viewMode === 'schedule' ? (

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, ChevronDown, MapPin, X } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, MapPin, Search, X } from 'lucide-react';
 import { HERO_MOSCOW, POPULAR } from '../lib/catalog';
 import { todayName } from '../lib/format';
 import { HUBS, LINES, STATIONS } from '../lib/metro';
+import { useLockBody, useMinWidth, useVisualViewport } from '../lib/media';
 import { DAYS, TIMES, type Audience } from '../lib/types';
 import { useApp } from '../state';
 import { Cover, MetroDot } from './bits';
@@ -81,7 +82,7 @@ export function Finder({
           </div>
 
           {!online ? (
-            <StationField onSearch={onSearch} />
+            <StationField />
           ) : (
             <p className="mt-4 rounded-2xl bg-canvas px-4 py-4 text-sm leading-relaxed text-quiet sm:mt-5">
               Live on Zoom or Google Meet · Moscow time (MSK). No metro, no walk.
@@ -197,33 +198,52 @@ export function Finder({
   );
 }
 
-function StationField({ onSearch }: { onSearch: () => void }) {
+function StationField() {
   const { state, setFilter } = useApp();
   const f = state.filters;
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const box = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const wide = useMinWidth(768);
+  const view = useVisualViewport(open && !wide);
+  const keyboardUp = !wide && view.inset > 8;
   const selected = STATIONS.find((s) => s.id === f.metroStationIds[0]);
+  const searching = q.trim().length > 0;
+
+  const close = () => {
+    const y = window.scrollY;
+    inputRef.current?.blur();
+    setOpen(false);
+    setQ('');
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: y, left: 0, behavior: 'instant' });
+    });
+  };
+
+  useLockBody(open && !wide);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
-      if (window.matchMedia('(min-width: 768px)').matches && !box.current?.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (wide && !box.current?.contains(e.target as Node)) close();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
     };
     document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, []);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      window.removeEventListener('keydown', onKey);
+    };
+    // close reads latest setState; rebind when the desktop/mobile layout changes.
+  }, [wide]);
 
   useEffect(() => {
-    if (!open) return;
-    if (!window.matchMedia('(max-width: 767px)').matches) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+    if (!open || !wide) return;
+    const t = window.setTimeout(() => inputRef.current?.focus(), 0);
+    return () => window.clearTimeout(t);
+  }, [open, wide]);
 
   const stations = useMemo(() => {
     const pool = f.metroLineId
@@ -241,6 +261,7 @@ function StationField({ onSearch }: { onSearch: () => void }) {
 
   const pick = (id?: string) => {
     if (!id) {
+      setFilter('metroLineId', undefined);
       setFilter('metroStationIds', []);
     } else {
       const s = STATIONS.find((x) => x.id === id);
@@ -249,9 +270,7 @@ function StationField({ onSearch }: { onSearch: () => void }) {
         setFilter('metroStationIds', [s.id]);
       }
     }
-    setOpen(false);
-    setQ('');
-    onSearch();
+    close();
   };
 
   return (
@@ -259,33 +278,189 @@ function StationField({ onSearch }: { onSearch: () => void }) {
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-quiet">
         Metro station
       </p>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="mt-2 flex min-h-[56px] w-full items-center gap-3 rounded-2xl border border-hair bg-canvas px-3 text-left sm:min-h-[64px] sm:px-4"
-        aria-expanded={open}
-      >
-        <MapPin className="h-5 w-5 shrink-0" />
-        <span className="min-w-0 flex-1">
-          {selected ? (
-            <>
-              <span className="flex items-center gap-2 font-semibold">
-                <MetroDot color={selected.lineColor} size={10} />
-                <span className="truncate">{selected.name}</span>
-                <span className="hidden truncate font-normal text-quiet sm:inline">
-                  {selected.nameRu}
+      <div className="relative mt-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-h-[56px] w-full items-center gap-3 rounded-2xl border border-hair bg-canvas px-4 text-left sm:min-h-[64px]"
+          aria-expanded={open}
+        >
+          <MapPin className="h-5 w-5 shrink-0" />
+          <span className="min-w-0 flex-1">
+            {selected ? (
+              <>
+                <span className="flex min-w-0 items-center gap-2 font-semibold">
+                  <MetroDot color={selected.lineColor} size={10} />
+                  <span className="truncate">{selected.name}</span>
                 </span>
-              </span>
-              <span className="mt-0.5 block truncate text-xs text-quiet">
-                {selected.district} · {selected.street}
-              </span>
-            </>
-          ) : (
-            <span className="font-medium text-quiet">Which station are you leaving from?</span>
-          )}
-        </span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-quiet" />
-      </button>
+                <span className="mt-0.5 block truncate text-xs text-quiet">
+                  {selected.nameRu} · {selected.district}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="font-medium text-quiet sm:hidden">Your metro station</span>
+                <span className="hidden font-medium text-quiet sm:inline">
+                  Which station are you leaving from?
+                </span>
+              </>
+            )}
+          </span>
+          <ChevronDown className={`h-4 w-4 shrink-0 text-quiet transition ${open ? 'rotate-180' : ''}`} />
+        </button>
+
+        {open ? (
+          <>
+            <button
+              type="button"
+              aria-label="Close stations"
+              className="fixed inset-0 z-[60] bg-ink/40 md:hidden"
+              onClick={close}
+            />
+            <div
+              className={`fixed inset-x-0 bottom-0 z-[61] flex min-h-0 flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl md:absolute md:inset-x-0 md:bottom-auto md:top-full md:mt-2 md:max-h-[min(32rem,70vh)] md:rounded-2xl md:border md:border-hair md:shadow-xl ${
+                keyboardUp ? '' : 'pb-[env(safe-area-inset-bottom)] md:pb-0'
+              }`}
+              style={
+                wide
+                  ? undefined
+                  : {
+                      bottom: view.inset,
+                      maxHeight:
+                        view.height > 0
+                          ? keyboardUp
+                            ? view.height
+                            : Math.round(view.height * 0.85)
+                          : '85svh',
+                    }
+              }
+            >
+              {keyboardUp ? null : (
+                <div className="flex shrink-0 items-center justify-between px-4 pb-1 pt-3.5 md:hidden">
+                  <p className="font-display text-lg font-bold">Choose a station</p>
+                  <button
+                    type="button"
+                    onClick={close}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-canvas"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
+
+              <div className="shrink-0 space-y-3 px-4 pb-3 pt-3">
+                <label htmlFor="hero-station-search" className="relative block">
+                  <span className="sr-only">Search metro stations</span>
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-quiet" />
+                  <input
+                    id="hero-station-search"
+                    ref={inputRef}
+                    type="text"
+                    inputMode="search"
+                    value={q}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="search"
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search stations"
+                    className="h-12 w-full min-w-0 rounded-xl border border-transparent bg-canvas py-0 pl-12 pr-12 text-[16px] leading-6 placeholder:text-quiet focus-visible:border-ink focus-visible:outline-none!"
+                  />
+                  {searching ? (
+                    <button
+                      type="button"
+                      aria-label="Clear station search"
+                      onClick={() => {
+                        setQ('');
+                        inputRef.current?.focus();
+                      }}
+                      className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-quiet hover:bg-warm"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                </label>
+
+                {searching ? null : (
+                  <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                    <button
+                      type="button"
+                      onClick={() => setFilter('metroLineId', undefined)}
+                      className={`h-9 shrink-0 rounded-full px-3.5 text-xs ${
+                        !f.metroLineId ? 'bg-ink text-paper' : 'bg-canvas'
+                      }`}
+                    >
+                      All lines
+                    </button>
+                    {LINES.map((l) => (
+                      <button
+                        key={l.id}
+                        type="button"
+                        onClick={() => {
+                          setFilter('metroLineId', l.id);
+                          if (selected && selected.lineId !== l.id) {
+                            setFilter('metroStationIds', []);
+                          }
+                        }}
+                        className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-canvas px-3.5 text-xs"
+                        style={{
+                          boxShadow: f.metroLineId === l.id ? `inset 0 0 0 2px ${l.color}` : undefined,
+                        }}
+                      >
+                        <MetroDot color={l.color} size={7} />
+                        {l.short}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-hair">
+                <li>
+                  <button
+                    type="button"
+                    aria-pressed={!selected}
+                    className={`flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-canvas ${
+                      !selected ? 'bg-warm font-semibold' : ''
+                    }`}
+                    onClick={() => pick()}
+                  >
+                    Any station
+                    {!selected ? <Check className="h-4 w-4 shrink-0" /> : null}
+                  </button>
+                </li>
+                {stations.map((s) => {
+                  const on = f.metroStationIds[0] === s.id;
+                  return (
+                    <li key={s.id}>
+                      <button
+                        type="button"
+                        aria-pressed={on}
+                        className={`flex min-h-12 w-full items-center gap-3 px-4 py-3 text-left hover:bg-canvas ${
+                          on ? 'bg-warm' : ''
+                        }`}
+                        onClick={() => pick(s.id)}
+                      >
+                        <MetroDot color={s.lineColor} size={10} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold">{s.name}</span>
+                          <span className="block truncate text-xs text-quiet">
+                            {s.nameRu} · {s.district}
+                          </span>
+                        </span>
+                        {on ? <Check className="h-4 w-4 shrink-0" /> : null}
+                      </button>
+                    </li>
+                  );
+                })}
+                {stations.length === 0 ? (
+                  <li className="px-4 py-6 text-sm text-quiet">No stations match that search.</li>
+                ) : null}
+              </ul>
+            </div>
+          </>
+        ) : null}
+      </div>
 
       <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 no-scrollbar">
         {HUBS.map((id) => {
@@ -297,8 +472,13 @@ function StationField({ onSearch }: { onSearch: () => void }) {
               key={s.id}
               type="button"
               onClick={() => {
-                setFilter('metroLineId', s.lineId);
-                setFilter('metroStationIds', [s.id]);
+                if (on) {
+                  setFilter('metroLineId', undefined);
+                  setFilter('metroStationIds', []);
+                } else {
+                  setFilter('metroLineId', s.lineId);
+                  setFilter('metroStationIds', [s.id]);
+                }
               }}
               className={`flex h-9 shrink-0 items-center gap-2 rounded-full px-3 text-xs font-medium ${
                 on ? 'bg-ink text-paper' : 'bg-canvas'
@@ -310,92 +490,6 @@ function StationField({ onSearch }: { onSearch: () => void }) {
           );
         })}
       </div>
-
-      {open && (
-        <>
-          <button
-            type="button"
-            aria-label="Close stations"
-            className="fixed inset-0 z-[60] bg-ink/40 md:hidden"
-            onClick={() => setOpen(false)}
-          />
-          <div className="fixed inset-x-0 bottom-0 z-[61] flex max-h-[85svh] flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-2xl md:absolute md:inset-x-0 md:bottom-auto md:top-full md:mt-2 md:max-h-[min(24rem,50vh)] md:rounded-2xl md:border md:border-hair md:pb-0 md:shadow-xl">
-            <div className="flex items-center justify-between px-4 py-3 md:hidden">
-              <p className="font-display text-lg font-bold">Choose a station</p>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-canvas"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex gap-1 overflow-x-auto border-b border-hair p-2 no-scrollbar">
-              <button
-                type="button"
-                onClick={() => setFilter('metroLineId', undefined)}
-                className={`h-9 shrink-0 rounded-full px-3 text-xs ${
-                  !f.metroLineId ? 'bg-ink text-paper' : 'bg-canvas'
-                }`}
-              >
-                All lines
-              </button>
-              {LINES.map((l) => (
-                <button
-                  key={l.id}
-                  type="button"
-                  onClick={() => {
-                    setFilter('metroLineId', l.id);
-                    setFilter('metroStationIds', []);
-                  }}
-                  className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-canvas px-3 text-xs"
-                  style={{ boxShadow: f.metroLineId === l.id ? `inset 0 0 0 2px ${l.color}` : undefined }}
-                >
-                  <MetroDot color={l.color} size={7} />
-                  {l.short}
-                </button>
-              ))}
-            </div>
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Station, district, or Russian name…"
-              className="h-12 w-full border-b border-hair px-4 outline-none"
-            />
-            <ul className="flex-1 overflow-y-auto overscroll-contain">
-              <li>
-                <button
-                  type="button"
-                  className="flex min-h-12 w-full items-center px-4 py-3 text-left text-sm hover:bg-canvas"
-                  onClick={() => pick()}
-                >
-                  Any station
-                </button>
-              </li>
-              {stations.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    className="flex min-h-12 w-full items-start gap-3 px-4 py-3 text-left hover:bg-canvas"
-                    onClick={() => pick(s.id)}
-                  >
-                    <MetroDot color={s.lineColor} size={10} />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold">
-                        {s.name}{' '}
-                        <span className="font-normal text-quiet">{s.nameRu}</span>
-                      </span>
-                      <span className="block text-xs text-quiet">
-                        {s.district} · {s.lineName}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </>
-      )}
     </div>
   );
 }
