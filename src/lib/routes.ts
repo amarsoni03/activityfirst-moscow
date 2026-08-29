@@ -8,7 +8,7 @@ export type DashTab =
 
 export type Route =
   | { view: 'explore' }
-  | { view: 'activity'; id: string }
+  | { view: 'activity'; id: string; booking?: boolean }
   | { view: 'my-week' }
   | { view: 'dashboard'; tab?: DashTab }
   | { view: 'provider' }
@@ -23,10 +23,17 @@ const DASH: DashTab[] = [
   'profile',
 ];
 
+function parseActivity(rest: string): Route {
+  if (rest.endsWith('/booking')) {
+    return { view: 'activity', id: rest.slice(0, -'/booking'.length), booking: true };
+  }
+  return { view: 'activity', id: rest };
+}
+
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#/, '') || 'explore';
   if (path === 'explore' || path === '') return { view: 'explore' };
-  if (path.startsWith('activity/')) return { view: 'activity', id: path.slice(9) };
+  if (path.startsWith('activity/')) return parseActivity(path.slice(9));
   if (path === 'free-time' || path === 'my-week') return { view: 'my-week' };
   if (path === 'dashboard' || path.startsWith('dashboard/')) {
     const tab = path.split('/')[1] as DashTab | undefined;
@@ -57,7 +64,7 @@ export function parsePath(pathname: string, hash = ''): Route {
   const path = pathname.replace(/\/$/, '') || '/';
   if (path === '/' || path === '/explore') return { view: 'explore' };
   if (path.startsWith('/activity/')) {
-    return { view: 'activity', id: decodeURIComponent(path.slice('/activity/'.length)) };
+    return parseActivity(decodeURIComponent(path.slice('/activity/'.length)));
   }
   if (path === '/my-week' || path === '/free-time') return { view: 'my-week' };
   if (path === '/dashboard' || path.startsWith('/dashboard/')) {
@@ -74,7 +81,7 @@ export function toPath(route: Route): string {
     case 'explore':
       return '/';
     case 'activity':
-      return `/activity/${route.id}`;
+      return route.booking ? `/activity/${route.id}/booking` : `/activity/${route.id}`;
     case 'my-week':
       return '/my-week';
     case 'dashboard':

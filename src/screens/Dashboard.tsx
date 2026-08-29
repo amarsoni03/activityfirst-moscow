@@ -52,7 +52,7 @@ export function Dashboard({ tab }: { tab?: DashTab }) {
                   <BookingRow
                     booking={b}
                     activity={find(b.activityId)}
-                    onOpen={() => go({ view: 'activity', id: b.activityId })}
+                    onOpen={() => go({ view: 'activity', id: b.activityId, booking: true })}
                     onCancel={() => cancel(b.id)}
                   />
                 </li>
@@ -70,7 +70,7 @@ export function Dashboard({ tab }: { tab?: DashTab }) {
               <BookingRow
                 booking={b}
                 activity={find(b.activityId)}
-                onOpen={() => go({ view: 'activity', id: b.activityId })}
+                onOpen={() => go({ view: 'activity', id: b.activityId, booking: true })}
                 onCancel={() => cancel(b.id)}
               />
             </li>

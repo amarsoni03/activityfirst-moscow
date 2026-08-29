@@ -30,6 +30,12 @@ function Shell() {
   useLayoutEffect(() => {
     if (route.view === 'activity') {
       const activity = find(route.id);
+      if (route.booking) {
+        document.title = activity
+          ? `Your booking · ${activity.title}`
+          : 'Your booking · ActivityFirst';
+        return;
+      }
       document.title = activity ? `${activity.title} · ActivityFirst` : 'ActivityFirst Moscow';
       return;
     }
@@ -50,13 +56,19 @@ function Shell() {
       />
       <main id="main-content">
         {route.view === 'explore' && <Explore />}
-        {route.view === 'activity' && <ActivityScreen key={route.id} id={route.id} />}
+        {route.view === 'activity' && (
+          <ActivityScreen key={route.id} id={route.id} openBooking={route.booking} />
+        )}
         {route.view === 'my-week' && <MyWeek />}
         {route.view === 'dashboard' && <Dashboard tab={route.tab} />}
         {route.view === 'provider' && <Provider />}
         {route.view === 'post' && <Publish />}
       </main>
-      <Footer onLegal={setLegal} hidden={route.view === 'post'} lift={route.view === 'activity'} />
+      <Footer
+        onLegal={setLegal}
+        hidden={route.view === 'post'}
+        lift={route.view === 'activity' && !route.booking}
+      />
       <SavedSheet open={saved} onClose={() => setSaved(false)} />
       <BookingsSheet open={bookings} onClose={() => setBookings(false)} />
       <LegalModal open={legal !== null} type={legal} onClose={() => setLegal(null)} />

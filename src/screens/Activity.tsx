@@ -34,7 +34,7 @@ import { ListingMosaic, PhotoLightbox } from './activity/Gallery';
 import { Checklist, Chip, Fact } from './activity/ListingBits';
 import { initials, type BookingForm } from './activity/form';
 
-export function ActivityScreen({ id }: { id: string }) {
+export function ActivityScreen({ id, openBooking }: { id: string; openBooking?: boolean }) {
   const { find, go, save, reserve, waitlist, cancel, message, state } = useApp();
   const activity = find(id);
   const booking = useBookingFor(id);
@@ -154,8 +154,34 @@ export function ActivityScreen({ id }: { id: string }) {
     onSubmit: submit,
     onCancel: () => {
       if (booking) cancel(booking.id);
+      if (openBooking) go({ view: 'dashboard', tab: 'upcoming' });
     },
   };
+
+  if (openBooking && booking) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-10">
+        <button
+          type="button"
+          onClick={() => go({ view: 'dashboard', tab: 'upcoming' })}
+          className="inline-flex min-h-10 items-center gap-2 text-sm text-quiet hover:text-ink"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Bookings
+        </button>
+        <div className="mt-6">
+          <BookingPanel {...panelProps} />
+        </div>
+        <button
+          type="button"
+          onClick={() => go({ view: 'activity', id: activity.id })}
+          className="mt-5 text-sm text-quiet underline decoration-hair underline-offset-4 hover:text-ink hover:decoration-ink"
+        >
+          View the listing
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-canvas pb-8 md:pb-16">
@@ -382,7 +408,7 @@ export function ActivityScreen({ id }: { id: string }) {
 
       {!drawer && (
         <div className="fixed inset-x-0 bottom-0 z-[35] border-t border-hair bg-paper/95 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             {booking ? (
               <>
                 <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-warm">
@@ -435,6 +461,7 @@ export function ActivityScreen({ id }: { id: string }) {
         onClose={() => setDrawer(false)}
         title={booking ? 'Your booking' : full ? 'Waitlist' : 'Reserve'}
         from="bottom"
+        flush
       >
         <BookingPanel {...panelProps} plain />
       </Sheet>

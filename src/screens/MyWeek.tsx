@@ -67,7 +67,13 @@ export function MyWeek() {
                 <li key={`${d.dateIso}-${item.activity.id}`}>
                   <WeekRow
                     item={item}
-                    onOpen={() => go({ view: 'activity', id: item.activity.id })}
+                    onOpen={() =>
+                      go({
+                        view: 'activity',
+                        id: item.activity.id,
+                        booking: item.kind === 'booked',
+                      })
+                    }
                   />
                 </li>
               ))}
