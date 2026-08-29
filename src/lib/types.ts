@@ -269,7 +269,7 @@ export const DEMO_USER = {
   phone: '+7 999 123-45-67',
 };
 
-export const CATALOG_VERSION = '3.1.0';
+export const CATALOG_VERSION = '4.0.0';
 
 export const KEYS = {
   activities: 'activityfirst.moscow.activities',
